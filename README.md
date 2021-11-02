@@ -129,9 +129,6 @@ query {
       ... on TransactionVariantOne {
         txnVariantOneField
       }
-      ... on TransactionVariantTwo {
-        txnVariantTwoField
-      }
       ... on TransactionVariantThree {
         txnVariantThreeField
       }
