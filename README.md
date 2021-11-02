@@ -47,7 +47,7 @@ The optimal approach to query transactions for a given account is to query the g
 
 ```graphql
 query {
-  getAccount(accountIdentifier: "24715892") {
+  getAccount(accountIdentifier: "28388981") {
     ... on AccountVariantOne {
       actVariantOneField
     }
