@@ -16,6 +16,8 @@ There is already a set of data generated in [accounts.json](./accounts.json); th
 
 `npm start`
 
+Then visit the GraphQL Playground at http://localhost:4000/graphql (does not work in Safari, use Chrome)
+
 ## Overview
 
 There are two interfaces and several implementing types; review [the schema](./schema.graphqls) to understand the interface and type definitions in more depth.
