@@ -1,0 +1,21 @@
+{
+  "name": "sandbox",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "generate-accounts": "node generate-accounts.js > accounts.json",
+    "start": "node index.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "apollo-server": "^3.4.0",
+    "graphql": "^16.0.0"
+  },
+  "devDependencies": {
+    "lorem-ipsum": "^2.0.4",
+    "nanoid": "^3.1.30"
+  }
+}

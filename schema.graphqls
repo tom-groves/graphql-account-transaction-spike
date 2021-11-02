@@ -1,0 +1,70 @@
+scalar DateTime
+
+enum AccountType {
+  ACCOUNT_VARIANT_ONE
+  ACCOUNT_VARIANT_TWO
+}
+
+enum TransactionType {
+  TRANSACTION_VARIANT_ONE
+  TRANSACTION_VARIANT_TWO
+  TRANSACTION_VARIANT_THREE
+}
+
+interface Transaction {
+  id: String
+  time: DateTime
+  value: Float
+}
+
+type TransactionVariantOne implements Transaction {
+  id: String
+  time: DateTime
+  value: Float
+  txnVariantOneField: String
+}
+
+type TransactionVariantTwo implements Transaction {
+  id: String
+  time: DateTime
+  value: Float
+  txnVariantTwoField: String
+}
+
+type TransactionVariantThree implements Transaction {
+  id: String
+  time: DateTime
+  value: Float
+  txnVariantThreeField: String
+}
+
+type AggregatedTransactionResult {
+  type: TransactionType
+  details: [Transaction]
+}
+
+interface Account {
+  identifier: String
+  transactions: [Transaction]
+}
+
+type AccountVariantOne implements Account {
+  identifier: String
+  transactions: [Transaction]
+  actVariantOneField: String
+}
+
+type AccountVariantTwo implements Account {
+  identifier: String
+  transactions: [Transaction]
+  actVariantTwoField: String
+}
+
+type Query {
+  getAccount(accountIdentifier: String): Account
+
+  getAggregatedTransactions(
+    accountIdentifier: String
+    transactionTypes: [TransactionType]
+  ): [AggregatedTransactionResult]
+}
