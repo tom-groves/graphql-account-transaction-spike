@@ -1,0 +1,198 @@
+# TODO:
+# - Review naming - when should Data suffix apply?  Should we prefix interfaces with `I` - e.g. ITransaction
+# - Add descriptions for
+# -- Schema
+# -- Types
+# -- Enums
+# -- Attributes
+# -- etc...
+# - Add directives for formatting, conditionals, etc.
+# - Can we specify patterns for validation of data/assertion of contract
+# - We appear to be missing some account identifying information:
+# -- Bank Accounts
+# --- Sort Code 
+# --- Account Number - these both appear to be concatenated in the `identifier` from SAPI, i.e. [SORT_CODE][ACCOUNT_NUMBER]
+# -- Cards
+# --- Card Number?  (is this in ID)
+# - Update Confluence to reflect any changes mdae below
+
+scalar DateTime
+
+type CustomerAccountNameData {
+    short: String!
+    fullLegal: String
+}
+
+type CurrencyAmountData {
+    amount: Float!
+    "In the format ^[A-Z]{3,3}$"
+    currency: String!
+}
+
+type CardLimitData {
+    limit: CurrencyAmountData!
+}
+
+type CustomerAccountBalanceData {
+    "Label of the balance."
+    name: String!
+    "Type of balance for a particular account number."
+    balanceType: String! # TODO: Verify that this should not be an enum
+    amount: CurrencyAmountData!
+    lastUpdated: DateTime!
+}
+
+type CustomerAccountStatusData {
+    code: String!
+    description: CustomerAccountStatus # TBC - review SAPI enum structure for status
+    lastChanged: DateTime! # TODO: normalise with CustomerAccountBalance - should this be lastUpdated?
+}
+
+enum CustomerAccountStatus {
+    # TBC - values 
+}
+
+type CustomerAccountProduct {
+    typeCode: String!
+    name: String!
+    description: String!
+    code: String!
+    sourceSystemCode: String!
+    "In the format ^[A-Z]{3,3}$"
+    baseCurrencyCode: String!
+}
+
+interface CustomerAccount {
+    "Unique identifier for a given customer account"
+    id: ID!
+    name: CustomerAccountNameData!
+    balances: [CustomerAccountBalanceData!]!
+    debtorAgent: DebtorAgentData! # TODO: verify name, should this just be agent?
+    product: CustomerAccountProduct!
+    transactions: [Transaction]!
+}
+
+enum CustomerAccountSwitchStatus {
+    NotSwitched
+    SwitchCompleted
+}
+
+interface SwitchableCustomerAccount {
+    switchStatus: CustomerAccountSwitchStatus!
+}
+
+# TODO: name
+type DomesticRPSAccount implements CustomerAccount & SwitchableCustomerAccount {
+    (...CustomerAccount fields)
+    (...SwitchableCustomerAccount fields)
+}
+
+# TODO: name - e.g. Savings, Hub
+type BankCustomerAccount implements CustomerAccount {
+    (...CustomerAccount fields)
+}
+
+type CardCustomerAccount implements CustomerAccount {
+    (...CustomerAccount fields)
+    limit: CardLimit!
+}
+
+type SchemeNameAndIdentifierData {
+    schemeName: String!
+    identifier: String!
+}
+
+type DebtorAgentData {
+    identifier: SchemeNameAndIdentifierData!
+    name: String!
+}
+
+type CreditorData {
+    account: SchemeNameAndIdentifierData!
+    agent: SchemeNameAndIdentifierData!
+    name: String!
+}
+
+enum TransactionStatus {
+    Booked
+    Pending
+}
+
+type BalanceAfterData {
+    amount: CurrencyAmountData!
+    balanceType: String!
+}
+
+type CurrencyExchangeData {
+    sourceCurrency: String!
+    targetCurrency: String!
+    unitCurrency: String! # TODO: understand these three fields ^^^
+    exchangeRate: Float!
+    instructedAmount: CurrencyAmountData!
+}
+
+interface Transaction {
+    id: ID!
+    identification: String! # TODO: is this just the account identifier, if so why do we need it twice
+    reference: String!
+    status: TransactionStatus!
+    transactionDate: DateTime!
+    valueDate: DateTime!
+    amount: CurrencyAmountData!
+    balanceAfer: BalanceAfterData # OPTIONAL. TODO: name, horrible
+    description: String # OPTIONAL.
+    proprietaryBankTransactionCode: String # OPTIONAL.
+}
+
+interface CurrencyExchangeTransaction {
+    currencyExchange: CurrencyExchangeData!
+}
+
+type CardTransactionData {
+    code: String!
+    subCode: String!
+    # TODO: should there be an enum of code + subcode descriptive values?
+}
+
+enum CardType {
+    Visa
+    Mastercard
+}
+
+type CardInstrumentData {
+    cardType: CardType!
+    identification: String! # TODO: should this be ID?
+}
+
+enum MerchantCategory {
+    # TODO: ISO-18245 values
+}
+
+type MerchantCategoryData {
+    code: String!
+    category: MerchantCategory!
+}
+
+type MerchantDetailsData {
+    name: String!
+    category: MerchantCategoryData!
+}
+
+type InternationalPaymentTransaction implements Transaction & CurrencyExchangeTransaction {
+    (...Transaction fields)
+    (...CurrencyExchangeTransaction fields)
+    creditor: CreditorData!
+}
+
+type CardTransaction implements Transaction & CurrencyExchangeTransaction {
+    (...Transaction fields)
+    (...CurrencyExchangeTransaction fields)
+    cardTransaction: CardTransactionData! # TODO: review name
+    cardInstrument: CardInstrumentData! # TODO: review name
+    merchantDetails: MerchantDetailsData!
+}
+
+# TODO: name is terrible, change it
+type NormalTransaction implements Transaction {
+    (...Transaction fields)
+}

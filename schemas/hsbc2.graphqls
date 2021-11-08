@@ -1,0 +1,358 @@
+# TODO:
+# - Documentation
+# -- Add descriptions for -- Schema -- Types -- Enums -- Attributes -- etc...
+# -- Add patterns!
+# -- Normalise descriptions to end with a period.
+
+# - Add directives for formatting, etc.
+
+# - Update Confluence to reflect any changes mdae below
+
+# - What are the inputs for querying?  just "getAccountsForCustomer?"
+
+# - Validate that if nested optional attributes are queried and the top level is null then it doesn't break
+
+scalar DateTime
+
+type CustomerAccount {
+  identification: [SchemeNameAndIdentifier!]! # IBAN, SortCode+Account number, etc.
+  name: CustomerName!
+
+  status: CustomerAccountStatus!
+
+  agent: Actor!
+
+  product: Product!
+
+  """
+  description: The default currency code based on accounts of this product type.
+  pattern: ^[A-Z]{3,3}$
+  """
+  baseCurrencyCode: String!
+
+  limit: Limit
+
+  balances: [Balance!]!
+
+  transactions: [Transaction]!
+
+  switchStatus: CustomerAccountSwitchStatus # OPTIONAL
+}
+
+enum CreditDebitIndicator {
+  Credit
+  Debit
+}
+
+type CurrencyAmount {
+  """
+  description: Amount Value
+  """
+  amount: Float!
+
+  """
+  description: 3 character currency code, e.g. USD, GBP, EUR.
+  pattern: ^[A-Z]{3,3}$
+  """
+  currency: String!
+
+  """
+  description: Informs whether the amount is debit or credit
+  derivation: if '-' prefixes amount then debit, else credit
+  """
+  creditDebitIndicator: CreditDebitIndicator!
+}
+
+type SchemeNameAndIdentifier {
+  """
+  description: Code that identifies the country the account belongs to, the account holder's bank, and the account number itself.
+
+  derivation:
+      For an identifier field populated with:
+      - the 14 digital field comprising the 6 digit Sort Code and 8 digit Account Number, schemeName must be "UK.OBIE.SortCodeAccountNumber"
+      - the full IBAN, schemeName must be "UK.OBIE.IBAN"
+      - the primary PAN (credit card), schemeName must be "UK.OBIE.PAN"
+  """
+  schemeName: String!
+
+  """
+  description: String containing a reference to identify an account.
+  """
+  identifier: String!
+}
+
+type CustomerName {
+  """
+  description: Name of the primary account holder
+  """
+  shortName: String!
+
+  """
+  description: Legal name of the primary account holder
+  """
+  fullLegalName: String
+}
+
+type CustomerAccountStatus {
+  """
+  description: Underlying system code.  This field describes account status active/block/close
+  """
+  code: String!
+
+  """
+  description: Human readably enum
+  """
+  status: AccountStatus!
+
+  """
+  description: The date at which this status was appiled
+  """
+  lastUpdated: DateTime!
+}
+
+enum LimitType {
+  # TODO: need PO or SAPI data to work these out
+  # ...,
+  # ...
+  Unknown
+}
+
+type Limit {
+  """
+  description: The type of limit
+  """
+  type: LimitType!
+
+  """
+  description: The credit limit of the account.
+  """
+  limit: CurrencyAmount!
+}
+
+enum BalanceType {
+  # TODO: get these from either SAPI or ISO balance type enum
+  # ...,
+  # ...
+  Unknown
+}
+
+type Balance {
+  """
+  description: Label of the balance.
+  """
+  name: String!
+
+  """
+  description: The type and amount of the balance
+  """
+  data: BalanceData!
+
+  """
+  description: The last time there was any update to the balance
+  """
+  lastUpdated: DateTime!
+}
+
+type Actor {
+  identifier: SchemeNameAndIdentifier!
+  name: String
+}
+
+type Product {
+  """
+  description: Product code maintained at fulfilment system, it is unique to a product. eg. CUA, SSV, SVG, etc.
+  """
+  code: String!
+
+  """
+  description: Product Type Code applicable for an account.
+  """
+  typeCode: String!
+
+  """
+  description: Short name of the product type based on type code.
+  """
+  name: String!
+
+  """
+  description: Item description of the product.
+  """
+  description: String!
+
+  """
+  description: Product System code. eg: 020 for RPS.
+  """
+  sourceSystemCode: String!
+}
+
+enum TransactionStatus {
+  Booked
+  Pending
+}
+
+type Transaction {
+  id: ID!
+
+  reference: String!
+
+  """
+  description: Transaction status
+  """
+  status: TransactionStatus!
+
+  transactionDate: DateTime!
+
+  valueDate: DateTime!
+
+  """
+  description: Amount and Currency of transaction
+  """
+  amount: CurrencyAmount!
+
+  balanceAfter: BalanceData # OPTIONAL.
+
+  """
+  description: Transaction Description
+  """
+  description: String # OPTIONAL.
+
+  currencyExchange: CurrencyExchange # OPTIONAL.
+
+  creditor: Creditor # OPTIONAL.
+
+  cardTransactionData: CardTransactionData # OPTIONAL.
+  
+  # TODO: Vijay to confirm approach
+  # proprietaryBankTransactionCode: String # OPTIONAL.
+  activityType: ActivityType # OPTIONAL.
+}
+
+enum ActivityType {
+  Debit
+  Credit
+  Transfer
+}
+
+type BalanceData {
+  amount: CurrencyAmount!
+  balanceType: BalanceType!
+}
+
+type CurrencyExchange {
+  sourceCurrency: String! # Should match instructedAmount.currency
+  targetCurrency: String!
+
+  """
+  via currency
+  """
+  unitCurrency: String!
+
+  exchangeRate: Float!
+
+  instructedAmount: CurrencyAmount!
+}
+
+type Creditor {
+  account: Actor!
+  agent: Actor!
+}
+
+type CardTransactionData {
+  transactionCode: String!
+  transactionSubCode: String!
+  cardType: CardType!
+  cardIdentification: String!
+  merchantName: String!
+  merchantCode: String!
+}
+
+enum CardType {
+  Visa
+  Mastercard
+}
+
+enum CustomerAccountSwitchStatus {
+  NotSwitched
+  SwitchCompleted
+}
+
+type Query {
+  # userId comes from the token in the header
+  getAccountsForCustomer(userId: ID!): [CustomerAccount]
+
+  getAccount(userId: ID!, accountId: ID!): CustomerAccount
+
+  getAccounts(userId: ID!, accountIds: [ID!]): [CustomerAccount]
+}
+
+enum AccountStatus {
+  # TODO: Validate list of values
+  Deceased
+  Active
+  Closed
+  Unclaimed
+  Dormant
+  Blocked
+  PastDue
+  Closing
+  Matured
+  NonAvailable
+  Inactive
+  ClosingTonight
+  NotFound
+  Unknown
+}
+
+# query getAccount(identifier: "90807012345678") {
+#   balances {
+
+#   }
+#   transactions {
+#     identification {
+#       schemeName
+#       identifier
+#     }
+#     reference
+#     cardTransactionData {
+#       cardType
+#     }
+#   }
+# }
+
+# query getAccountsForCustomer(identifier: "tom") {
+#   transactions {
+#     identification {
+#       schemeName
+#       identifier
+#     }
+#     reference
+#     cardTransactionData {
+#       cardType
+#     }
+#   }
+# }
+
+# {
+#   "toms accounts": [
+#     {
+#       "identification": {
+#         "schemeName": "UK.OBIE.SortCodeAccountNumber",
+#         "identifier": "90807012345678"
+#       }
+#       "transactions": [
+#         {
+#           "reference": "123",
+#           "cardTransactionData": {
+#             "cardType": "Visa"
+#           }
+#         }
+#         {
+#           "reference": "456",
+#           "cardTransactionData": {
+#             "cardType": "Visa"
+#           }
+#         }
+#       ]
+#     }
+#   ]
+# }

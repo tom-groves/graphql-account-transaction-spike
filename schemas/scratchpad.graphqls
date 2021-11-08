@@ -1,0 +1,262 @@
+enum BalanceType {
+ LEDGER
+ AVAILABLE
+ OVERDRAFT
+ CREDIT_LIMIT
+}
+
+type Balance {
+ type: BalanceType! # Questions around what this should be - LEDGER/AVAILABLE/etc vs InterimBooked/InterimAvailable....
+ amount: CurrencyAmount!
+ lastChanged: DateTime!
+ debitCreditIndicator: DebitCreditIndicator!
+ creditLine: CreditLine # Nullable
+}
+
+enum DebitCreditIndicator {
+    CREDIT
+    DEBIT
+}
+
+enum CreditLineType {
+    TEMPORARY
+    CREDIT
+}
+
+type CreditLine {
+    amount: CurrencyAmount!
+    type: CreditLineType!
+}
+
+# -----
+
+enum ProductType {
+    BUSINESS_CURRENT_ACCOUNT
+    COMMERCIAL_CREDIT_CARD
+    OTHER
+    PERSONAL_CURRENT_ACCOUNT
+    SME_LOAN
+}
+
+interface Product {
+ identifier: String!
+ name: String!
+ type: ProductType!
+ description: String
+ sourceSystemCode: String # Should this come from an enum
+ baseCurrencyCode: String # Should this come from an enum
+}
+
+type CreditCardProduct implements Product {
+ (...Product Fields)
+}
+
+type CurrentAccountProduct implements Product {
+ (...Product Fields)
+}
+
+# -----
+
+
+enum AccountType {
+    Business
+    Personal   
+}
+
+enum AccountSubType {
+    ChargeCard
+    CreditCard
+    CurrentAccount
+    EMoney
+    Loan
+    Mortgage
+    PrePaidCard
+    Savings
+}
+
+enum AccountStatusCode {
+    Deceased
+    Active
+    Closed
+    Unclaimed
+    Dormant
+    Blocked
+    PastDue
+    Closing
+    Matured
+    NotAvailable
+    Inactive
+    ClosingTonight
+    NotFound
+}
+
+type AccountStatus {
+ code: AccountStatusCode
+ dateTime: DateTime
+}
+
+# -----
+
+type AccountServicerScheme {
+ name: String
+ identification: String
+}
+
+type AccountServicer {
+ scheme: [AccountServicerScheme]
+}
+
+# -----
+
+interface Account {
+ identifier: String # Does this exist for ALL accounts?
+ name: String # Validate whether this applies to all accounts?
+ product: Product!
+ balances: [Balance!]! # 0..n or 1..n?
+ transactions: [Transaction]!
+ status: AccountStatus
+ servicer: AccountServicer
+}
+
+interface PaymentAccount {
+ paymentServiceUser: String # Legal name of payee
+}
+
+interface SortCodeAccountNumber {
+ sortCode: String @sortCodeFormat
+ accountNumber: String @accountFormat
+}
+
+interface Switchable {
+ switchStatus: SwitchStatus
+}
+
+enum SwitchStatus {
+ NOT_SWITCHED
+ SWITCH_COMPLETED
+}
+
+# REVIEW against EDD - what is this called in HSBC parlance?
+# DomesticRPS (RPS = Retail Payment Scheme) - question, should we call it that in the graph?
+type SterlingCurrentAccount implements Account & PaymentAccount & SortCodeAccountNumber & Switchable {
+ (... Account Fields)
+ (... PaymentAccount Fields)
+ (... SortCodeAccountNumber Fields)
+ (... Switchable Fields)
+}
+
+# REVIEW against EDD - what is this called in HSBC parlance?
+type NonSterlingCurrentAccount implements Account & PaymentAccount & SortCodeAccountNumber {
+ (... Account Fields)
+ (... PaymentAccount Fields)
+ (... SortCodeAccountNumber Fields)
+}
+
+# REVIEW against EDD - what is this called in HSBC parlance?
+# Verify that you cannot make payments out of a savings account?  Should this implement PaymentAccount
+type SavingsAccount implements Account & SortCodeAccountNumber {
+ (... Account Fields)
+ (... SortCodeAccountNumber Fields)
+}
+
+# type LoanAccount implements Account & SortCodeAccountNumber {
+#  (... Account Fields)
+#  (... SortCodeAccountNumber Fields)
+#  # Can payments be sent from loan accounts?
+# }
+
+# type IsaAccount implements Account & SortCodeAccountNumber {
+#  (... Account Fields)
+#  (... SortCodeAccountNumber Fields)
+# }
+
+# -----
+
+# Does CreditCardAccount have a number AND identifer - or are they the same thing?
+type CreditCardAccount implements Account {
+ (... Account Fields)
+ limit: CurrencyAmount
+}
+
+# -----
+
+enum Currency {
+ GBP
+ USD
+ ...
+}
+
+type CurrencyAmount {
+ value: Float
+ currency: Currency
+}
+
+# -----
+
+# How is this supposed to work? not relay style
+interface TransactionPagination {
+  nextPageIndex: Int
+}
+
+# Should we have a TransactionType enum, CREDIT_CARD, DEBIT_CARD, TRANSFER, etc.
+interface Transaction {
+ identifier: String
+ reference: String
+ booking: DateTime
+ amount: CurrencyAmount
+ originalAmount: Float # What does this represent?
+ status: TransactionStatus
+ currencyExchange: CurrencyExchange
+}
+
+enum TransactionStatus {
+  BOOKED
+  PENDING
+}
+
+type RemittanceTransactionInformation {
+  # What information should this contain?  Not elaborated on miro
+}
+
+type CurrencyExchange {
+  sourceCurrency: Currency
+  targetCurrency: Currency
+  unitCurrency: Float # Validate what this is, rename?
+  exchangeRange: Float
+  instructed: CurrencyAmount # what exactly is this?  we have source and target currency already
+}
+
+interface CardTransaction {
+  # What is this?  is it just for credit cards, or debit too
+  # Is there _any_ difference between a credit card transaction and a debit card transction?
+  cardInstrumentIdentification: String 
+}
+
+interface MerchantTransaction {
+  merchantCategoryCode: MerchantCategoryCode
+  merchantName: String
+}
+
+enum MerchantCategoryCode {
+  # What are the values 
+}
+
+interface CreditorAccountData {
+  creditorAccountIdentification: String # Validate type
+  creditorAccountName: String
+}
+
+type CreditCardTransaction implements Transaction & CardTransaction & MerchantTransaction
+{
+  (...Transaction fields)
+  (...CardTransaction fields)
+  (...MerchantTransaction fields)
+}
+
+
+type RemittanceTransaction implements Transaction & CreditorAccountData{
+ (...Transaction fields)
+ (...CreditorAccountData fields)
+ information: [RemittanceTransactionInformation]
+}
+

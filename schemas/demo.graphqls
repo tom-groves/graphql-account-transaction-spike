@@ -1,0 +1,217 @@
+scalar DateTime
+
+enum BalanceType_AS_PER_MIRO {
+    LEDGER
+    AVAILABLE
+    OVERDRAFT
+    CREDIT_LIMIT
+}
+
+enum BalanceType {
+    ClosingAvailable
+    ClosingBooked
+    ClosingCleared
+    Expected
+    ForwardAvailable
+    Information
+    InterimAvailable
+    InterimBooked
+    InterimCleared
+    OpeningAvailable
+    OpeningBooked
+    OpeningCleared
+    PreviouslyClosedBooked
+}
+
+type Balance {
+    type: BalanceType
+    amount: CurrencyAmount
+    lastChanged: DateTime
+}
+
+# -----
+
+interface Product {
+    typeCode: String # TBC
+    description: String
+    sourceSystemCode: String # TBC
+    baseCurrencyCode: String # TBC - Currency enum?
+}
+
+type CreditCardProduct implements Product {
+    typeCode: String # TBC
+    description: String
+    sourceSystemCode: String # TBC
+    baseCurrencyCode: String # TBC - Currency enum?
+}
+
+type CurrentAccountProduct implements Product {
+    typeCode: String # TBC
+    description: String
+    sourceSystemCode: String # TBC
+    baseCurrencyCode: String # TBC - Currency enum?
+}
+
+# -----
+
+enum AccountType {
+    Business
+    Personal   
+}
+
+enum AccountSubType {
+    ChargeCard
+    CreditCard
+    CurrentAccount
+    EMoney
+    Loan
+    Mortgage
+    PrePaidCard
+    Savings
+}
+
+enum AccountStatusCode {
+    Deceased
+    Active
+    Closed
+    Unclaimed
+    Dormant
+    Blocked
+    PastDue
+    Closing
+    Matured
+    NotAvailable
+    Inactive
+    ClosingTonight
+    NotFound
+}
+
+type AccountStatus {
+    code: AccountStatusCode
+    dateTime: DateTime
+}
+
+# -----
+
+type AccountServicerScheme {
+    name: String
+    identification: String
+}
+
+type AccountServicer {
+    scheme: [AccountServicerScheme]
+}
+
+# -----
+
+interface Account {
+    name: String # Validate whether this applies to all accounts?
+    product: Product
+    balances: [Balance!]
+#  transactions: [Transaction]
+    status: AccountStatus
+    servicer: AccountServicer
+}
+
+interface PaymentAccount {
+    paymentServiceUser: String
+}
+
+interface SortCodeAccountNumber {
+    sortCode: String # @sortCodeFormat
+    accountNumber: String # @accountFormat
+}
+
+interface Switchable {
+    switchStatus: SwitchStatus
+}
+
+enum SwitchStatus {
+    NotSwitched
+    SwitchCompleted
+}
+
+# REVIEW against EDD - what is this called in HSBC parlance?
+# DomesticRPS (RPS = Retail Payment Scheme) - question, should we call it that in the graph?
+type SterlingCurrentAccount implements Account & PaymentAccount & SortCodeAccountNumber & Switchable {
+    name: String # Validate whether this applies to all accounts?
+    product: Product
+    balances: [Balance]
+#  transactions: [Transaction]
+    status: AccountStatus
+    servicer: AccountServicer
+    paymentServiceUser: String
+    sortCode: String # @sortCodeFormat
+    accountNumber: String # @accountFormat
+    switchStatus: SwitchStatus
+}
+
+# REVIEW against EDD - what is this called in HSBC parlance?
+type NonSterlingCurrentAccount implements Account & PaymentAccount & SortCodeAccountNumber {
+    name: String # Validate whether this applies to all accounts?
+    product: Product
+    balances: [Balance]
+#  transactions: [Transaction]
+    status: AccountStatus
+    servicer: AccountServicer
+    paymentServiceUser: String
+    sortCode: String # @sortCodeFormat
+    accountNumber: String # @accountFormat
+    }
+
+# REVIEW against EDD - what is this called in HSBC parlance?
+type SavingsAccount implements Account & SortCodeAccountNumber {
+    name: String # Validate whether this applies to all accounts?
+    product: Product
+    balances: [Balance]
+#  transactions: [Transaction]
+    status: AccountStatus
+    servicer: AccountServicer
+    sortCode: String # @sortCodeFormat
+    accountNumber: String # @accountFormat
+    }
+
+# type LoanAccount implements Account & SortCodeAccountNumber {
+#  (... Account Fields)
+#  (... SortCodeAccountNumber Fields)
+#  # Can payments be sent from loan accounts?
+# }
+
+# type IsaAccount implements Account & SortCodeAccountNumber {
+#  (... Account Fields)
+#  (... SortCodeAccountNumber Fields)
+# }
+
+# -----
+
+type CreditCardAccount implements Account {
+    name: String # Validate whether this applies to all accounts?
+    product: Product
+    balances: [Balance]
+#  transactions: [Transaction]
+    status: AccountStatus
+    servicer: AccountServicer
+    limit: CurrencyAmount
+}
+
+# -----
+
+enum Currency {
+    GBP
+    USD
+    EUR
+}
+
+type CurrencyAmount {
+    value: Float
+    currency: Currency
+}
+
+# -----
+
+
+type Query {
+       getCreditCardAccount(cardNumber: String): CreditCardAccount
+       getAccount(identifier: String): Account
+       getAccountsForCustomer(customerIdentifier: String): [Account]
+}

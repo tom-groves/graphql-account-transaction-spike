@@ -4,8 +4,9 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "generate-accounts": "node generate-accounts.js > accounts.json",
-    "start": "node index.js"
+    "generate-accounts": "node src/generate-accounts.js > accounts.json",
+    "generate-docs": "rm -rf doc/schema && graphdoc -e http://localhost:4000 -o ./doc/schema",
+    "start": "node src/index.js"
   },
   "keywords": [],
   "author": "",
@@ -15,6 +16,7 @@
     "graphql": "^16.0.0"
   },
   "devDependencies": {
+    "@2fd/graphdoc": "^2.4.0",
     "lorem-ipsum": "^2.0.4",
     "nanoid": "^3.1.30"
   }
