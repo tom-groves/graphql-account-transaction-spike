@@ -16,6 +16,7 @@ scalar DateTime
 
 type CustomerAccount {
   identification: [SchemeNameAndIdentifier!]! # IBAN, SortCode+Account number, etc.
+  
   name: CustomerName!
 
   status: CustomerAccountStatus!
@@ -126,7 +127,7 @@ type Limit {
   """
   description: The credit limit of the account.
   """
-  limit: CurrencyAmount!
+  amount: CurrencyAmount!
 }
 
 enum BalanceType {
@@ -154,8 +155,8 @@ type Balance {
 }
 
 type Actor {
-  identifier: SchemeNameAndIdentifier!
   name: String
+  identification: SchemeNameAndIdentifier!
 }
 
 type Product {
@@ -235,7 +236,7 @@ enum ActivityType {
 
 type BalanceData {
   amount: CurrencyAmount!
-  balanceType: BalanceType!
+  type: BalanceType!
 }
 
 type CurrencyExchange {
